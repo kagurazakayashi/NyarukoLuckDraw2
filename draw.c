@@ -3,17 +3,19 @@
 #include <time.h>
 #include <limits.h>
 #include <unistd.h>
+#include <string.h>
 
 #define N 624
 #define M 397
 #define MATRIX_A 0x9908b0dfUL
 #define UPPER_MASK 0x80000000UL
 #define LOWER_MASK 0x7fffffffUL
+#define VERSION 200
 
 static unsigned long mt[N];
 static int mti=N+1;
 
-void init_genrand(unsigned long s) {
+void initGenrand(unsigned long s) {
     mt[0]= s & 0xffffffffUL;
     for (mti=1; mti<N; mti++) {
         mt[mti] = 
@@ -22,37 +24,12 @@ void init_genrand(unsigned long s) {
     }
 }
 
-// unsigned int genrand_int32(void) {
-//     unsigned y;
-//     static unsigned mag01[2]={0x0UL, MATRIX_A};
-//     if (mti >= N) {
-//         int kk;
-//         for (kk=0;kk<N-M;kk++) {
-//             y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-//             mt[kk] = mt[kk+M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-//         }
-//         for (;kk<N-1;kk++) {
-//             y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-//             mt[kk] = mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-//         }
-//         y = (mt[N-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
-//         mt[N-1] = mt[M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-//         mti = 0;
-//     }
-//     y = mt[mti++];
-//     y ^= (y >> 11);
-//     y ^= (y << 7) & 0x9d2c5680UL;
-//     y ^= (y << 15) & 0xefc60000UL;
-//     y ^= (y >> 18);
-//     return y;
-// }
-
-unsigned long genrand_int64(void) {
+unsigned long genrandMersenneTwister(void) {
     int i;
     unsigned long x;
     static unsigned long mag01[2]={0x0UL, MATRIX_A};
     if (mti >= N) {
-        if (mti == N+1) init_genrand(5489UL);
+        if (mti == N+1) initGenrand(5489UL);
         for (i=0;i<N-M;i++) {
             x = (mt[i] & UPPER_MASK)|(mt[i+1] & LOWER_MASK);
             mt[i] = mt[i+M] ^ (x >> 1) ^ mag01[x & 0x1UL];
@@ -73,22 +50,18 @@ unsigned long genrand_int64(void) {
     return x;
 }
 
-// unsigned int rand32(unsigned min, unsigned max) {
-//     return genrand_int32() % (max - min + 1) + min;
-// }
-
-unsigned long rand64(unsigned long min, unsigned long max) {
-    return genrand_int64() % (max - min + 1) + min;
+unsigned long randNum(unsigned long num, unsigned long min, unsigned long max) {
+    return num % (max - min + 1) + min;
 }
 
-// unsigned int countDigits(unsigned long num) {
-//     int count = 0;
-//     while (num != 0) {
-//         num /= 10;
-//         ++count;
-//     }
-//     return count;
-// }
+unsigned int countDigits(unsigned long num) {
+    int count = 0;
+    while (num != 0) {
+        num /= 10;
+        ++count;
+    }
+    return count;
+}
 
 void padZero(char *val, int num, int len) {
     int i;
@@ -99,26 +72,49 @@ void padZero(char *val, int num, int len) {
     sprintf(val, "%d", num);
 }
 
-int main(void) {
-    // printf(" UINT_MAX LEN = %lu : %lu\n", countDigits(UINT_MAX), UINT_MAX);
-    // printf("ULONG_MAX LEN = %lu : %lu\n", countDigits(ULONG_MAX), ULONG_MAX);
+size_t writeData(void *buffer, size_t size, size_t nmemb, void **data) {
+    size_t total_size = size * nmemb;
+    char *temp = realloc(*data, total_size + 1);
+    if (temp == NULL) {
+        return 0;
+    }
+    *data = temp;
+    memcpy(*data, buffer, total_size);
+    ((char*)*data)[total_size] = '\0';
+    return total_size;
+}
+
+short isLowercaseAlphanumeric(const char *str) {
+    for (int i = 0; str[i]; i++) {
+        if (!(str[i] >= '0' && str[i] <= '9') && !(str[i] >= 'a' && str[i] <= 'z')) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+unsigned long hash_djb2(unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    return hash;
+}
+
+int main() {
     int i;
+    char *latestHash = "\0";
+    unsigned long numHash = 0;
+    char hash[21] = "\0";
     time_t rawtime = time(NULL);
     struct tm * timeinfo;
+    char *versionStr;
     time (&rawtime);
-    unsigned long r = 0;
-    char str[20]; // 32:10 digits, 64:20 digits
-    while (rawtime < ULONG_MAX) {
-        time (&rawtime);
-        // timeinfo = gmtime(&rawtime);
-        // rawtime = (rawtime / 60) * 60; // Round to minute
-        init_genrand(rawtime);
-        r = genrand_int64();
-        sprintf(str, "%020lu", r); // Pad with zeros
-        // printf("%ld %04d%02d%02d%02d%02d%02d %s\n",rawtime, timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, str);
-        printf("%ld %s\n",rawtime, str);
-        fflush(stdout);
-        sleep(1);
-    }
+    srand(rawtime);
+    initGenrand(rand()+rawtime);
+    numHash = genrandMersenneTwister();
+    sprintf(hash, "%020lu", numHash);
+    printf("%ld %s %s\n", rawtime, hash, latestHash);
     return 0;
 }
