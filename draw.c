@@ -102,7 +102,29 @@ unsigned long hash_djb2(unsigned char *str)
     return hash;
 }
 
-int main() {
+void testEnv()
+{
+    unsigned int i;
+    clock_t start, end;
+    double cpu_time_used;
+    time_t rawtime;
+    unsigned long numHash = 0;
+    time (&rawtime);
+    initGenrand(rand());
+    printf("=== NyarukoLuckDraw 2 by KagurazakaMiyabi v%d.%d.%d ===\nhttps://github.com/kagurazakayashi/NyarukoLuckDraw2\n", VERSION / 100, VERSION % 100 / 10, VERSION % 10);
+    printf("    TIME = %lu(%lu)\n", rawtime, countDigits(rawtime));
+    printf("    CHAR = %d(%lu) ~ %d(%lu) | %u(%lu)\n", CHAR_MIN, countDigits(CHAR_MIN), CHAR_MAX, countDigits(CHAR_MAX), UCHAR_MAX, countDigits(UCHAR_MAX));
+    printf("   SHORT = %d(%lu) ~ %d(%lu) | %u(%lu)\n", SHRT_MIN, countDigits(SHRT_MIN), SHRT_MAX, countDigits(SHRT_MAX), USHRT_MAX, countDigits(USHRT_MAX));
+    printf("     INT = %d(%lu) ~ %d(%lu) | %u(%lu)\n", INT_MIN, countDigits(INT_MIN), INT_MAX, countDigits(INT_MAX), UINT_MAX, countDigits(UINT_MAX));
+    printf("    LONG = %ld(%lu) ~ %ld(%lu) | %lu(%lu)\n", LONG_MIN, countDigits(LONG_MIN), LONG_MAX, countDigits(LONG_MAX), ULONG_MAX, countDigits(ULONG_MAX));
+    printf("LONGLONG = %lld(%lu) ~ %lld(%lu) | %llu(%lu)\n", LLONG_MIN, countDigits(LLONG_MIN), LLONG_MAX, countDigits(LLONG_MAX), ULLONG_MAX, countDigits(ULLONG_MAX));
+    printf("RAND_MAX = %d(%lu)\n", RAND_MAX, countDigits(RAND_MAX));
+    printf("N = %d(%lu)   M = %d(%lu)   MATRIX_A = %lu(%lu)\n", N, countDigits(N), M, countDigits(M), MATRIX_A, countDigits(MATRIX_A));
+    printf("UPPER_MASK = %lu(%lu)   LOWER_MASK = %lu(%lu)\n", UPPER_MASK, countDigits(UPPER_MASK), LOWER_MASK, countDigits(LOWER_MASK));
+    printf("BUILD = %s (%s %s)\n", __FILE__, __DATE__, __TIME__);
+}
+
+int main(int argc, char *argv[]) {
     int i;
     char *latestHash = "\0";
     unsigned long numHash = 0;
@@ -112,6 +134,12 @@ int main() {
     char *versionStr;
     time (&rawtime);
     srand(rawtime);
+    for (i = 1; i < argc; i++) {
+        if(strcmp(argv[i], "--about") == 0 && i + 1 < argc) {
+            testEnv();
+            return 0;
+        }
+    }
     initGenrand(rand()+rawtime);
     numHash = genrandMersenneTwister();
     sprintf(hash, "%020lu", numHash);
