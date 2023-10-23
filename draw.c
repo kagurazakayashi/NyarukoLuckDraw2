@@ -11,6 +11,7 @@
 #define UPPER_MASK 0x80000000UL
 #define LOWER_MASK 0x7fffffffUL
 #define VERSION 200
+#define TESTIMES 1000000
 
 static unsigned long mt[N];
 static int mti=N+1;
@@ -122,6 +123,21 @@ void testEnv()
     printf("N = %d(%lu)   M = %d(%lu)   MATRIX_A = %lu(%lu)\n", N, countDigits(N), M, countDigits(M), MATRIX_A, countDigits(MATRIX_A));
     printf("UPPER_MASK = %lu(%lu)   LOWER_MASK = %lu(%lu)\n", UPPER_MASK, countDigits(UPPER_MASK), LOWER_MASK, countDigits(LOWER_MASK));
     printf("BUILD = %s (%s %s)\n", __FILE__, __DATE__, __TIME__);
+    fflush(stdout);
+    start = clock();
+    for (i = 0; i < TESTIMES; i++) {
+        rawtime = time(NULL);
+        time (&rawtime);
+        srand(rawtime);
+        initGenrand(rand()+rawtime);
+        numHash = genrandMersenneTwister();
+        if (i == 0) {
+            printf("%020lu ... ", numHash);
+        }
+    }
+    end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("used %f seconds.\n", cpu_time_used);
 }
 
 int main(int argc, char *argv[]) {
