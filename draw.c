@@ -51,6 +51,15 @@ unsigned long genrandMersenneTwister(void) {
     return x;
 }
 
+unsigned long hash_djb2(unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    return hash;
+}
+
 unsigned long randNum(unsigned long num, unsigned long min, unsigned long max) {
     return num % (max - min + 1) + min;
 }
@@ -92,15 +101,6 @@ short isLowercaseAlphanumeric(const char *str) {
         }
     }
     return 1;
-}
-
-unsigned long hash_djb2(unsigned char *str)
-{
-    unsigned long hash = 5381;
-    int c;
-    while ((c = *str++))
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    return hash;
 }
 
 void testEnv()
@@ -155,9 +155,11 @@ int main(int argc, char *argv[]) {
             testEnv();
             return 0;
         }
+        if(strcmp(argv[i], "--hash") == 0 && i + 1 < argc) {
+            latestHash = argv[i + 1];
+        }
     }
-    initGenrand(rand()+rawtime);
-    numHash = genrandMersenneTwister();
+    numHash = hash_djb2(latestHash);
     sprintf(hash, "%020lu", numHash);
     printf("%ld %s %s\n", rawtime, hash, latestHash);
     return 0;
