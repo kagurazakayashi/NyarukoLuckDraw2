@@ -3,6 +3,7 @@
 #include <time.h>
 #include <limits.h>
 #include <unistd.h>
+#include <curl/curl.h>
 #include <string.h>
 
 #define N 624
@@ -94,6 +95,25 @@ size_t writeData(void *buffer, size_t size, size_t nmemb, void **data) {
     return total_size;
 }
 
+char *getInfo(char *url) {
+    char *data = NULL;
+    CURL *curl = curl_easy_init();
+    if(curl) {
+        CURLcode res;
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            free(data);
+            data = NULL;
+        }
+        curl_easy_cleanup(curl);
+    }
+    return data;
+}
+
 short isLowercaseAlphanumeric(const char *str) {
     for (int i = 0; str[i]; i++) {
         if (!(str[i] >= '0' && str[i] <= '9') && !(str[i] >= 'a' && str[i] <= 'z')) {
@@ -123,6 +143,7 @@ void testEnv()
     printf("N = %d(%lu)   M = %d(%lu)   MATRIX_A = %lu(%lu)\n", N, countDigits(N), M, countDigits(M), MATRIX_A, countDigits(MATRIX_A));
     printf("UPPER_MASK = %lu(%lu)   LOWER_MASK = %lu(%lu)\n", UPPER_MASK, countDigits(UPPER_MASK), LOWER_MASK, countDigits(LOWER_MASK));
     printf("BUILD = %s (%s %s)\n", __FILE__, __DATE__, __TIME__);
+    printf("cURL = %s\nTest genrand %u times ... ", curl_version(), TESTIMES);
     fflush(stdout);
     start = clock();
     for (i = 0; i < TESTIMES; i++) {
@@ -142,6 +163,7 @@ void testEnv()
 
 int main(int argc, char *argv[]) {
     int i;
+    char *argURL = NULL;
     char *latestHash = "\0";
     unsigned long numHash = 0;
     char hash[21] = "\0";
@@ -158,8 +180,27 @@ int main(int argc, char *argv[]) {
         if(strcmp(argv[i], "--hash") == 0 && i + 1 < argc) {
             latestHash = argv[i + 1];
         }
+        if(strcmp(argv[i], "--url") == 0 && i + 1 < argc) {
+            argURL = argv[i + 1];
+        }
     }
-    numHash = hash_djb2(latestHash);
+    if (latestHash != NULL && strlen(latestHash) == 64 && isLowercaseAlphanumeric(latestHash) != 0) {
+        numHash = hash_djb2(latestHash);
+    } else if (argURL != NULL && strlen(argURL) > 0) {
+        latestHash = getInfo(argURL);
+        if(latestHash == NULL) {
+            printf("Error: Failed to get latesthash from %s\n", argURL);
+            return 1;
+        }
+        if (strlen(latestHash) != 64 || isLowercaseAlphanumeric(latestHash) == 0) {
+            printf("Error: Invalid latesthash : %s\n", latestHash);
+            return 1;
+        }
+        numHash = hash_djb2(latestHash);
+    } else {
+        initGenrand(rand()+rawtime);
+        numHash = genrandMersenneTwister();
+    }
     sprintf(hash, "%020lu", numHash);
     printf("%ld %s %s\n", rawtime, hash, latestHash);
     return 0;
