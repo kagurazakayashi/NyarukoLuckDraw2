@@ -1,3 +1,13 @@
+._*
+.DS_Store
+_MACOS*
+.fseventsd
+.Spotlight*
+Thumbs.db
+*.stackdump
+test.*
+202*
+
 # Created by https://www.toptal.com/developers/gitignore/api/c
 # Edit at https://www.toptal.com/developers/gitignore?templates=c
 
@@ -56,6 +66,3 @@ Mkfile.old
 dkms.conf
 
 # End of https://www.toptal.com/developers/gitignore/api/c
-
-test.*
-202*

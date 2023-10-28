@@ -4,10 +4,15 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
-// #define GETCMD "/root/bitcoin/bin/bitcoin-cli -datadir=/root/BitcoinData -rpcconnect=127.0.0.1 -rpcport=8332 -rpcuser=yashi -rpcpassword=****** getblockchaininfo"
+// Development
 #define GETCMD "cat test.json"
-#define BASEDIR "."
+#define BASEDIR "/d/c/NyarukoLuckDraw2"
+
+// Production
+// #define GETCMD "/root/bitcoin/bin/bitcoin-cli -datadir=/root/BitcoinData -rpcconnect=127.0.0.1 -rpcport=8332 -rpcuser=yashi -rpcpassword=****** getblockchaininfo"
+// #define BASEDIR "/root/BitcoinData/hashlog"
 
 void rungethashcmd(char **result) {
     char buffer[128];
@@ -101,25 +106,46 @@ void checkdir(char *path) {
     struct stat st;
     char *token = strtok(path, "/");
     char dir[256] = "";
+    char tmp[256] = "";
+    int mkdirok = 0;
+    char start = '\0';
+    if (path[0] == '/') {
+        start = '/';
+    }
     while (token != NULL) {
         strcat(dir, token);
         strcat(dir, "/");
-        if (stat(dir, &st) == -1) {
-            mkdir(dir);
+        if (start != '\0') {
+            sprintf(tmp, "%c%s", start, dir);
+        }
+        if (stat(tmp, &st) == -1) {
+            printf("mkdir : %s\n", tmp);
+            # ifdef _WIN32
+            mkdirok = mkdir(tmp);
+            // system("mkdir %s", tmp);
+            # else
+            mkdirok = mkdir(tmp, 0700);
+            // system("mkdir -p %s", tmp);
+            # endif
+            if (mkdirok != 0) {
+                printf("Error: Failed to create dir : %s\n", tmp);
+                return;
+            }
         }
         token = strtok(NULL, "/");
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     char *json = NULL;
     char *blocks = NULL;
     char *bestblockhash = NULL;
     char *timestamp = NULL;
     time_t timestampt = 0;
     struct tm *times = NULL;
+    char gz[212] = "\0";
     char dir[128] = "\0";
-    char path[256] = "\0";
+    char path[200] = "\0";
     
     rungethashcmd(&json);
     chkjson(strdup(json), &timestamp, &bestblockhash, &blocks);
@@ -129,25 +155,29 @@ int main() {
     }
 
     timestampt = atoi(timestamp);
-    // times = localtime(&timestampt);
-    times = gmtime(&timestampt);
+    times = gmtime(&timestampt); // localtime(&timestampt);
     sprintf(dir, "%s/%d/%02d/%02d/%02d", BASEDIR, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour);
     sprintf(path, "%s/%d%02d%02d_%02d%02d%02d_%s_%s_%s.json", dir, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour, times->tm_min, times->tm_sec, timestamp, blocks, bestblockhash);
-
+    printf("saveto = %s\n", dir);
     checkdir(strdup(dir));
     if (strlen(path) < 1 || strlen(path) > 254) {
         printf("Error: Invalid path : %s\n", path);
         return 1;
     }
     FILE *fp = fopen(path, "w");
-    printf("saveto = %s\n", path);
+    printf("file = %s\n", path);
     if (fp != NULL) {
         removeChar(json, ' ');
         removeChar(json, '\r');
         removeChar(json, '\n');
         fputs(json, fp);
         fclose(fp);
+    } else {
+        printf("Error: Failed to open file : %s\n", path);
+        return 1;
     }
-
+    sprintf(gz, "gzip -f -9 %s", path);
+    system(gz);
+    printf("OK\n");
     return 0;
 }
