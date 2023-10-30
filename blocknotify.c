@@ -153,6 +153,15 @@ int main(int argc, char *argv[]) {
         printf("Error: Invalid json : %s\n", json);
         return 1;
     }
+    
+    // bitcoind -blocknotify=/root/blocknotify %s
+    if (argc > 1) {
+        char *firstArg = argv[1];
+        if (strcmp(firstArg, bestblockhash) != 0) {
+            printf("Error: Invalid hash arg : %s\n", firstArg);
+            return 1;
+        }
+    }
 
     timestampt = atoi(timestamp);
     times = gmtime(&timestampt); // localtime(&timestampt);
