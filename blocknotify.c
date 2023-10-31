@@ -136,6 +136,21 @@ void checkdir(char *path) {
     }
 }
 
+void indexfileadd(char *txt, char *dir) {
+    char *filename = NULL;
+    char tmp[256] = "\0";
+    sprintf(tmp, "%s/index.txt", dir);
+    filename = strdup(tmp);
+    FILE *fp = fopen(filename, "a+");
+    if (fp != NULL) {
+        fputs(txt, fp);
+        fputs("\n", fp);
+        fclose(fp);
+    } else {
+        printf("Error: Failed to open file %s\n", filename);
+    }
+}
+
 int main(int argc, char *argv[]) {
     char *json = NULL;
     char *blocks = NULL;
@@ -143,9 +158,10 @@ int main(int argc, char *argv[]) {
     char *timestamp = NULL;
     time_t timestampt = 0;
     struct tm *times = NULL;
-    char gz[212] = "\0";
+    char gz[256] = "\0";
     char dir[128] = "\0";
-    char path[200] = "\0";
+    char filename[128] = "\0";
+    char path[256] = "\0";
     
     rungethashcmd(&json);
     chkjson(strdup(json), &timestamp, &bestblockhash, &blocks);
@@ -166,15 +182,15 @@ int main(int argc, char *argv[]) {
     timestampt = atoi(timestamp);
     times = gmtime(&timestampt); // localtime(&timestampt);
     sprintf(dir, "%s/%d/%02d/%02d/%02d", BASEDIR, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour);
-    sprintf(path, "%s/%d%02d%02d_%02d%02d%02d_%s_%s_%s.json", dir, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour, times->tm_min, times->tm_sec, timestamp, blocks, bestblockhash);
-    printf("saveto = %s\n", dir);
+    sprintf(filename, "%d%02d%02d_%02d%02d%02d_%s_%s_%s.json", times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour, times->tm_min, times->tm_sec, timestamp, blocks, bestblockhash);
+    sprintf(path, "%s/%s", dir, filename);
+    printf("saveto = %s\n", path);
     checkdir(strdup(dir));
     if (strlen(path) < 1 || strlen(path) > 254) {
         printf("Error: Invalid path : %s\n", path);
         return 1;
     }
     FILE *fp = fopen(path, "w");
-    printf("file = %s\n", path);
     if (fp != NULL) {
         removeChar(json, ' ');
         removeChar(json, '\r');
@@ -187,6 +203,7 @@ int main(int argc, char *argv[]) {
     }
     sprintf(gz, "gzip -f -9 %s", path);
     system(gz);
+    indexfileadd(filename, dir);
     printf("OK\n");
     return 0;
 }
