@@ -136,6 +136,13 @@ void checkdir(char *path) {
     }
 }
 
+void removeDotAfter(char *txt) {
+    char *dot = strchr(txt, '.');
+    if (dot != NULL) {
+        *dot = '\0';
+    }
+}
+
 void indexfileadd(char *txt, char *dir) {
     char *filename = NULL;
     char tmp[256] = "\0";
@@ -181,7 +188,7 @@ int main(int argc, char *argv[]) {
 
     timestampt = atoi(timestamp);
     times = gmtime(&timestampt); // localtime(&timestampt);
-    sprintf(dir, "%s/%d/%02d/%02d/%02d", BASEDIR, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour);
+    sprintf(dir, "%s/%d/%02d/%02d", BASEDIR, times->tm_year + 1900, times->tm_mon + 1, times->tm_mday);
     sprintf(filename, "%d%02d%02d_%02d%02d%02d_%s_%s_%s.json", times->tm_year + 1900, times->tm_mon + 1, times->tm_mday, times->tm_hour, times->tm_min, times->tm_sec, timestamp, blocks, bestblockhash);
     sprintf(path, "%s/%s", dir, filename);
     printf("saveto = %s\n", path);
@@ -203,6 +210,7 @@ int main(int argc, char *argv[]) {
     }
     sprintf(gz, "gzip -f -9 %s", path);
     system(gz);
+    removeDotAfter(filename);
     indexfileadd(filename, dir);
     printf("OK\n");
     return 0;
