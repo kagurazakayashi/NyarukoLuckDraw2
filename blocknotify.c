@@ -6,14 +6,19 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-// Development
+// 測試環境配置 Development
 #define GETCMD "cat test.json"
 #define BASEDIR "/d/c/NyarukoLuckDraw2"
 
-// Production
+// 生產環境配置 Production
 // #define GETCMD "/root/bitcoin/bin/bitcoin-cli -datadir=/root/BitcoinData -rpcconnect=127.0.0.1 -rpcport=8332 -rpcuser=yashi -rpcpassword=****** getblockchaininfo"
 // #define BASEDIR "/root/BitcoinData/hashlog"
 
+/**
+ * 執行 gethash 命令，將結果存儲在指定的結果指針中。
+ * 
+ * @param result 存儲結果的指針
+ */
 void rungethashcmd(char **result) {
     char buffer[128];
     FILE *pipe;
@@ -36,6 +41,11 @@ void rungethashcmd(char **result) {
     pclose(pipe);
 }
 
+/**
+ * @brief 去除字串中的空格、換行符號和逗號。
+ * 
+ * @param str 要處理的字串。
+ */
 void trim(char *str) {
     char *p = str;
     char *q = str;
@@ -49,6 +59,12 @@ void trim(char *str) {
     *p = '\0';
 }
 
+/**
+ * 從字串中移除指定的字符。
+ *
+ * @param str 要處理的字串
+ * @param garbage 要移除的字符
+ */
 void removeChar(char *str, char garbage) {
     char *src, *dst;
     for (src = dst = str; *src != '\0'; src++) {
@@ -60,6 +76,13 @@ void removeChar(char *str, char garbage) {
     *dst = '\0';
 }
 
+/**
+ * 將字串以 : 分割成兩個部分。
+ * 
+ * @param str 要分割的字串
+ * @param left 存放分割後的左半部分
+ * @param right 存放分割後的右半部分
+ */
 void split2(char *str, char *left, char *right) {
     int i = 0;
     int j = 0;
@@ -78,6 +101,14 @@ void split2(char *str, char *left, char *right) {
     right[j] = '\0';
 }
 
+/**
+ * 檢查 json 字串，並將結果存儲在指定的結果指針中。
+ * 
+ * @param json 要檢查的 json 字串
+ * @param timestamp 存儲 timestamp 的指針
+ * @param bestblockhash 存儲 bestblockhash 的指針
+ * @param blocks 存儲 blocks 的指針
+ */
 void chkjson(char *json, char **timestamp, char **bestblockhash, char **blocks) {
     char *line = strtok(json, "\n");
     while (line != NULL) {
@@ -102,6 +133,11 @@ void chkjson(char *json, char **timestamp, char **bestblockhash, char **blocks) 
     }
 }
 
+/**
+ * 檢查目錄是否存在，不存在則創建。
+ * 
+ * @param path 要檢查的目錄
+ */
 void checkdir(char *path) {
     struct stat st;
     char *token = strtok(path, "/");
@@ -136,6 +172,11 @@ void checkdir(char *path) {
     }
 }
 
+/**
+ * 移除字串中的點號及其後面的內容。
+ * 
+ * @param txt 要處理的字串
+ */
 void removeDotAfter(char *txt) {
     char *dot = strchr(txt, '.');
     if (dot != NULL) {
@@ -143,6 +184,12 @@ void removeDotAfter(char *txt) {
     }
 }
 
+/**
+ * 將檔案名稱寫入索引檔。
+ * 
+ * @param txt 檔案名稱
+ * @param dir 索引檔所在目錄
+ */
 void indexfileadd(char *txt, char *dir) {
     char *filename = NULL;
     char tmp[256] = "\0";
@@ -158,6 +205,13 @@ void indexfileadd(char *txt, char *dir) {
     }
 }
 
+/**
+ * 主函式。
+ * 
+ * @param argc 參數個數
+ * @param argv 參數列表
+ * @return 程式執行結果
+ */
 int main(int argc, char *argv[]) {
     char *json = NULL;
     char *blocks = NULL;

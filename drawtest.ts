@@ -2,6 +2,7 @@
 npm i -g typescript
 tsc drawtest.ts && node drawtest.js && rm drawtest.js
 */
+// 區塊資訊檔名中的資訊
 type FileNameData = {
   year: number;
   month: number;
@@ -13,6 +14,7 @@ type FileNameData = {
   height: number;
   hash: string;
 };
+// 區塊資訊檔案內容
 type FileContentsData = {
   chain: string;
   blocks: number;
@@ -31,13 +33,22 @@ type FileContentsData = {
   prune_target_size: number;
   warnings: string;
 };
+// 以上所有資訊的集合
 type FileData = {
   info: FileNameData;
   data: FileContentsData;
 };
 
+/**
+ * 資訊解析類
+ */
 class DrawDataParse {
-  static splitFileName(fileName): FileNameData {
+  /**
+   * 將檔案名稱拆分為日期、時間、時間戳、高度和哈希值。
+   * @param {string} fileName 檔案名稱
+   * @return {FileNameData} 拆分後的檔案名稱資料
+   */
+  static splitFileName(fileName: string): FileNameData {
     const parts = fileName.split("_"); // 日期,時間,時間戳,高度,hash
     const date = parts[0];
     const time = parts[1];
@@ -55,11 +66,22 @@ class DrawDataParse {
     return data;
   }
 
+  /**
+   * 將檔案內容拆分為區塊資訊。
+   * @param {string} fileContents 檔案內容
+   * @return {FileContentsData} 拆分後的區塊資訊
+   */
   static splitFileContents(fileContents): FileContentsData {
     const data: FileContentsData = JSON.parse(fileContents);
     return data;
   }
 
+  /**
+   * 將檔案名稱和檔案內容拆分並返回 FileData 物件。
+   * @param {string} fileName 檔案名稱
+   * @param {string} fileContents 檔案內容
+   * @return {FileData} 拆分後的檔案資料
+   */
   static splitFileData(fileName, fileContents): FileData {
     const fileNameData = this.splitFileName(fileName);
     const fileContentsData = this.splitFileContents(fileContents);
@@ -71,15 +93,28 @@ class DrawDataParse {
   }
 }
 
+/**
+ * 抽獎類
+ */
 class Draw {
   hash: string = "";
   numHash: number = 0;
 
+  /**
+   * 建構子
+   * @param {FileNameData} data 檔案名稱資料
+   * @return {Draw} 抽獎類
+   */
   constructor(data: FileNameData) {
     this.hash = data.hash;
     this.numHash = this.djb2();
   }
 
+  /**
+   * djb2 哈希算法
+   * @param {string} str 要計算的字串
+   * @return {number} 哈希值
+   */
   djb2(str = this.hash): number {
     if (str.length == 0) {
       return -1;
@@ -91,6 +126,11 @@ class Draw {
     return hash >>> 0;
   }
 
+  /**
+   * 每個字母視為 16 進位制數，將所有字母相加
+   * @param {string} str 要計算的字串
+   * @return {number} 相加後的 10 進位制數
+   */
   sum16t10(str = this.hash): number {
     let sum = 0;
     if (str.length == 0) {
@@ -104,6 +144,13 @@ class Draw {
     return sum;
   }
 
+  /**
+   * 產生指定範圍內的隨機數。
+   * @param {number} min 最小值。
+   * @param {number} max 最大值。
+   * @param {number} numHash 數字哈希值，預設為 this.numHash 。
+   * @return {number} 指定範圍內的隨機數。如果參數無效，則返回 -1 。
+   */
   randNum(min: number, max: number, numHash = this.numHash): number {
     const zone: number = max - min + 1;
     if (
@@ -119,12 +166,25 @@ class Draw {
   }
 }
 
+/**
+ * 抽獎類測試
+ */
 class DrawTest {
   draw: Draw;
+
+  /**
+   * 建構子
+   * @param {Draw} draw 抽獎類
+   * @return {DrawTest} 抽獎類測試
+   */
   constructor(draw: Draw) {
     this.draw = draw;
   }
 
+  /**
+   * 測試 djb2
+   * @param {number} testCount 測試次數
+   */
   testNumhash(testCount = 100) {
     const testResultPrint: string[] = [];
     draw.numHash = draw.djb2();
@@ -148,6 +208,10 @@ class DrawTest {
     console.log(testResultPrint.join(""));
   }
 
+  /**
+   * 測試 randNum
+   * @param {number} testCount 測試次數
+   */
   testRandNum(testCount = 100) {
     const min: number = Math.floor(Math.random() * 100);
     const max: number = min + Math.floor(Math.random() * 100);
@@ -176,6 +240,11 @@ class DrawTest {
     console.log(testResultPrint.join(""));
   }
 
+  /**
+   * 產生指定長度的隨機 hex 字串。
+   * @param {number} hexLen hex 字串長度，預設為 64 。
+   * @return {string} 隨機 hex 字串。
+   */
   randomHash(hexLen = 64): string {
     const hexRandStr: string[] = new Array(64);
     for (let i = 0; i < hexLen; i++) {
@@ -185,6 +254,10 @@ class DrawTest {
     return hexRandStr.join("");
   }
 
+  /**
+   * 測試所有
+   * @param {number} testCount 測試次數
+   */
   testAll(testCount = 10) {
     for (let i = 0; i < testCount; i++) {
       const hexRandStr: string = this.randomHash();
